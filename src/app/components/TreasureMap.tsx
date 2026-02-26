@@ -103,7 +103,7 @@ export function TreasureMap() {
             transition={{ duration: 0.8 }}
             className="relative"
             style={{
-              width: '680px',
+              width: '950px',
               height: '540px',
               maxWidth: '100%',
               backgroundColor: '#fef9f4',
