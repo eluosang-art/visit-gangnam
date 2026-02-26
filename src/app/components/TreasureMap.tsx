@@ -1,21 +1,21 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Heart, X, MapPin, UtensilsCrossed } from 'lucide-react';
+import { Heart, X, MapPin, UtensilsCrossed, TrainFront, Droplets } from 'lucide-react';
 
 const landmarks = [
   {
     id: 1,
     name: '강남역',
-    icon: 'subway',
+    icon: TrainFront,
     description: '상업, 대중문화가 가장 활발하게 교차하는 심장부.',
     rating: 4,
     image: '/images/gangnam-station.png',
-    x: 30, y: 74,
+    x: 38, y: 66,
   },
   {
     id: 2,
     name: '양재천 친환경 생물센터',
-    icon: 'water',
+    icon: Droplets,
     description: '도심 속 자연 생태를 체험할 수 있는 친환경 공간.',
     rating: 4,
     image: '/images/gangnam-station.png',
@@ -24,7 +24,7 @@ const landmarks = [
   {
     id: 3,
     name: '탄천 대교 센터',
-    icon: 'food',
+    icon: UtensilsCrossed,
     description: '탄천과 양재천이 만나는 수변 휴식 공간.',
     rating: 5,
     image: '/images/gangnam-station.png',
@@ -104,7 +104,7 @@ export function TreasureMap() {
             className="relative"
             style={{
               width: '950px',
-              height: '680px',
+              height: '540px',
               maxWidth: '100%',
               backgroundColor: '#fef9f4',
               borderRadius: '24px',
@@ -119,12 +119,14 @@ export function TreasureMap() {
                 src="/images/dulle-gil-map.png"
                 alt="강남 둘레길 지도"
                 className="h-auto"
-                style={{ maxWidth: '100%', maxHeight: '100%' }}
+                style={{ maxWidth: '80%', maxHeight: '80%' }}
               />
             </div>
 
             {/* Landmark Icons on Map */}
-            {landmarks.map((landmark) => (
+            {landmarks.map((landmark) => {
+              const Icon = landmark.icon;
+              return (
               <button
                 key={landmark.id}
                 className="absolute flex flex-col items-center"
@@ -148,15 +150,7 @@ export function TreasureMap() {
                     transition: 'border-color 0.2s ease',
                   }}
                 >
-                  {landmark.icon === 'food' ? (
-                    <UtensilsCrossed className="w-6 h-6" style={{ color: '#e8628c' }} />
-                  ) : (
-                    <img
-                      src={`/images/icon-${landmark.icon}.png`}
-                      alt={landmark.name}
-                      className="w-6 h-6 object-contain"
-                    />
-                  )}
+                  <Icon className="w-6 h-6" style={{ color: activeLandmark === landmark.id ? '#e8628c' : '#b8a99a', transition: 'color 0.2s ease' }} />
                 </motion.div>
                 <div
                   className="flex items-center justify-center mt-1"
@@ -167,14 +161,17 @@ export function TreasureMap() {
                     padding: '2px 8px',
                     boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
                     whiteSpace: 'nowrap',
+                    border: activeLandmark === landmark.id ? '1.5px solid #e8628c' : '1.5px solid transparent',
+                    transition: 'border-color 0.2s ease',
                   }}
                 >
-                  <p style={{ fontSize: '11px', fontWeight: 600, color: '#2d2926', fontFamily: 'Pretendard', textAlign: 'center' }}>
+                  <p style={{ fontSize: '11px', fontWeight: 600, color: activeLandmark === landmark.id ? '#e8628c' : '#2d2926', fontFamily: 'Pretendard', textAlign: 'center', transition: 'color 0.2s ease' }}>
                     {landmark.name}
                   </p>
                 </div>
               </button>
-            ))}
+              );
+            })}
           </motion.div>
 
           {/* Card Area */}
