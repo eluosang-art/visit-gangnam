@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, useScroll, useTransform, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, Heart } from 'lucide-react';
 
 const slides = [
@@ -107,56 +107,135 @@ const SlideContent = ({ slide }: { slide: typeof slides[0] }) => (
   </>
 );
 
+const slideVariants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? '100%' : '-100%',
+  }),
+  center: {
+    x: '0%',
+  },
+  exit: (direction: number) => ({
+    x: direction > 0 ? '-100%' : '100%',
+  }),
+};
+
 export function HallyuTourismCourses() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ['start start', 'end end'],
-  });
-
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [direction, setDirection] = useState(1);
+  const isAnimating = useRef(false);
+  const currentSlideRef = useRef(0);
 
+  const goToSlide = (next: number, dir: number) => {
+    if (next < 0 || next >= slides.length || isAnimating.current) return false;
+    isAnimating.current = true;
+    setDirection(dir);
+    setCurrentSlide(next);
+    currentSlideRef.current = next;
+
+    // Sync scroll position within container
+    const el = containerRef.current;
+    if (el) {
+      const containerTop = el.getBoundingClientRect().top + window.scrollY;
+      const scrollRange = el.scrollHeight - window.innerHeight;
+      const targetScroll = containerTop + (next / (slides.length - 1)) * scrollRange;
+      window.scrollTo({ top: targetScroll, behavior: 'smooth' });
+    }
+
+    setTimeout(() => { isAnimating.current = false; }, 700);
+    return true;
+  };
+
+  // Wheel event: one wheel = one slide, locked during animation
   useEffect(() => {
-    const unsubscribe = scrollYProgress.on('change', (latest) => {
-      const slideIndex = Math.min(Math.floor(latest * slides.length), slides.length - 1);
-      setCurrentSlide(slideIndex);
-    });
-    return () => unsubscribe();
-  }, [scrollYProgress]);
+    const handleWheel = (e: WheelEvent) => {
+      const el = containerRef.current;
+      if (!el) return;
+
+      const rect = el.getBoundingClientRect();
+      const isPinned = rect.top <= 5 && rect.bottom >= window.innerHeight - 5;
+      if (!isPinned) return;
+
+      // Always block scroll while pinned and animating
+      if (isAnimating.current) {
+        e.preventDefault();
+        return;
+      }
+
+      const slide = currentSlideRef.current;
+
+      if (e.deltaY > 0 && slide < slides.length - 1) {
+        e.preventDefault();
+        goToSlide(slide + 1, 1);
+      } else if (e.deltaY < 0 && slide > 0) {
+        e.preventDefault();
+        goToSlide(slide - 1, -1);
+      }
+      // At boundaries (first+up or last+down): don't prevent → page scrolls naturally
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    return () => window.removeEventListener('wheel', handleWheel);
+  }, []);
+
+  // Touch events for mobile
+  useEffect(() => {
+    const touchStartY = { current: 0 };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartY.current = e.touches[0].clientY;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      const el = containerRef.current;
+      if (!el || isAnimating.current) return;
+
+      const rect = el.getBoundingClientRect();
+      const isPinned = rect.top <= 5 && rect.bottom >= window.innerHeight - 5;
+      if (!isPinned) return;
+
+      const deltaY = touchStartY.current - e.changedTouches[0].clientY;
+      if (Math.abs(deltaY) < 50) return;
+
+      const slide = currentSlideRef.current;
+
+      if (deltaY > 0 && slide < slides.length - 1) {
+        goToSlide(slide + 1, 1);
+      } else if (deltaY < 0 && slide > 0) {
+        goToSlide(slide - 1, -1);
+      }
+    };
+
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, []);
 
   return (
-    <div ref={containerRef} className="relative" style={{ height: '500vh' }}>
+    <div ref={containerRef} className="relative" style={{ height: '300vh' }}>
       {/* Sticky Container */}
       <div className="sticky top-0 h-screen overflow-hidden flex items-center">
-        {/* Background Images */}
-        <div className="absolute inset-0">
-          {slides.map((slide, index) => {
-            const isLast = index === slides.length - 1;
-            const n = slides.length;
-            const t = 0.03; // very narrow transition for snappy crossfade
-            const opacity = useTransform(
-              scrollYProgress,
-              isLast
-                ? [(index - t) / n, index / n]
-                : [
-                    (index - t) / n,
-                    index / n,
-                    (index + 1 - t) / n,
-                    (index + 1) / n,
-                  ],
-              isLast ? [0, 1] : [0, 1, 1, 0]
-            );
-
-            return (
-              <motion.div key={slide.id} style={{ opacity }} className="absolute inset-0">
-                <div
-                  className="w-full h-full bg-cover bg-center"
-                  style={{ backgroundImage: `url(${slide.image})` }}
-                />
-              </motion.div>
-            );
-          })}
-        </div>
+        {/* Background Images - animated horizontal slide */}
+        <AnimatePresence initial={false} custom={direction}>
+          <motion.div
+            key={currentSlide}
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+            className="absolute inset-0"
+          >
+            <div
+              className="w-full h-full bg-cover bg-center"
+              style={{ backgroundImage: `url(${slides[currentSlide].image})` }}
+            />
+          </motion.div>
+        </AnimatePresence>
 
         {/* Left Semi-transparent Block - Desktop */}
         <div
@@ -169,10 +248,10 @@ export function HallyuTourismCourses() {
           <AnimatePresence mode="wait">
             <motion.div
               key={currentSlide}
-              initial={{ opacity: 0, x: -30 }}
+              initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 30 }}
-              transition={{ duration: 0.6 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.25 }}
               style={{ padding: '0 80px', width: '100%' }}
             >
               <SlideContent slide={slides[currentSlide]} />
@@ -185,10 +264,10 @@ export function HallyuTourismCourses() {
           <AnimatePresence mode="wait">
             <motion.div
               key={currentSlide}
-              initial={{ opacity: 0, x: -30 }}
+              initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 30 }}
-              transition={{ duration: 0.6 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.25 }}
             >
               <SlideContent slide={slides[currentSlide]} />
             </motion.div>
