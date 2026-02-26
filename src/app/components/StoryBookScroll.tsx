@@ -151,8 +151,12 @@ export function StoryBookScroll() {
                   className="w-full h-full bg-cover bg-center"
                   style={{
                     backgroundImage: `url(${chapter.image})`,
-                    filter: 'brightness(0.9) saturate(1.1)',
+                    filter: 'saturate(1.1)',
                   }}
+                />
+                <div
+                  className="absolute inset-0"
+                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }}
                 />
                 <div
                   className="absolute inset-0"
