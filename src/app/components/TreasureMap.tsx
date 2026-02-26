@@ -72,7 +72,7 @@ export function TreasureMap() {
 
   return (
     <section className="relative py-20 overflow-hidden" style={{ backgroundColor: '#fffaf7' }}>
-      <div className="max-w-[1280px] mx-auto px-5 md:px-20">
+      <div className="max-w-[1480px] mx-auto px-5 md:px-20">
         {/* Header */}
         <div className="mb-8">
           <motion.p initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}
@@ -104,7 +104,7 @@ export function TreasureMap() {
             className="relative"
             style={{
               width: '950px',
-              height: '540px',
+              height: '680px',
               maxWidth: '100%',
               backgroundColor: '#fef9f4',
               borderRadius: '24px',
